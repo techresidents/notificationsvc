@@ -32,7 +32,7 @@ class Notifier(object):
         try:
             pass
             #self._start_chat_persist_job()
-            #self._persist_data()
+            self._notify()
             #self._end_chat_persist_job()
 
         except DuplicateJobException as warning:
@@ -46,3 +46,9 @@ class Notifier(object):
             #self._abort_chat_persist_job()
             pass
 
+
+    def _notify(self):
+        pass
+        # Read notification based upon job_id
+        # Call into email service wrapper
+        # return async object
