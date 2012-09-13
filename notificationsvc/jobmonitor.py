@@ -35,7 +35,7 @@ class NotificationThreadPool(ThreadPool):
         """
 
         # TODO
-        #notifier = ChatPersister(self.db_session_factory, job_id)
+        #notifier = Notifier(self.db_session_factory, job_id)
         #notifier.notify()
 
 
