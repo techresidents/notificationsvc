@@ -1,12 +1,16 @@
 import logging
+import uuid
 
 from trpycore.thread.util import join
-from trsvcscore.db.models import Notification
+from trsvcscore.db.models.notification_models import Notification as NotificationModel
+from trsvcscore.db.models.notification_models import  NotificationUser, NotificationJob
+from trsvcscore.db.models.django_models import User
 from trsvcscore.service.handler.service import ServiceHandler
 from trnotificationsvc.gen import TNotificationService
 from trnotificationsvc.gen.ttypes import Notification, NotificationPriority, UnavailableException, InvalidNotificationException
 
 import settings
+
 from jobmonitor import NotificationJobMonitor
 
 
@@ -14,9 +18,13 @@ from jobmonitor import NotificationJobMonitor
 class NotificationServiceHandler(TNotificationService.Iface, ServiceHandler):
     """NotificationServiceHandler manages the notification service.
 
-    NotificationServiceHandler is responsible for managing
-    the service functionality including service start,
-    stop, and join.
+    NotificationServiceHandler specifies the service
+    interface.
+
+    It is also responsible for managing the service
+    functionality including service start, stop,
+    and join.
+
     """
     def __init__(self, service):
         super(NotificationServiceHandler, self).__init__(
@@ -48,34 +56,100 @@ class NotificationServiceHandler(TNotificationService.Iface, ServiceHandler):
         join([self.job_monitor, super(NotificationServiceHandler, self)], timeout)
 
 
-    def notify(self, requestContext, notification):
+    def _validate_notify_params(self, db_session, users, context, notification):
+        """Validate notify() input params
+
+        As a performance optimization, when this method validates
+        each recipient user ID it will append the User to the input
+        users list.
+        """
+        if not context:
+            raise InvalidNotificationException()
+
+        if not notification.subject:
+            raise InvalidNotificationException()
+
+        if not len(notification.recipientUserIds):
+            raise InvalidNotificationException()
+
+        try:
+            # Ensure the specified recipients exist
+            for user_id in notification.recipientUserIds:
+                user = db_session.query(User).filter(User.id==user_id).one()
+                users.append(user)
+        except Exception as e:
+            raise InvalidNotificationException()
+
+
+
+    def notify(self, context, notification):
         """Send notification
 
+        This method writes the input notification to the db
+        and creates a job for each recipient for the
+        notification to process.
+        This is done to ensure that we don't lose any
+        information should this service go down.
+
         Args:
-            requestContext: String to identify calling context
+            context: String to identify calling context
             notification: Notification object.
         Returns:
             If no 'token' attribute was provided in the input
             notification object, the returned object will
             specify one.
         Raises:
-            UnavailableException
+            InvalidNotificationException if input Notification
+            object is invalid.
+            UnavailableException for any other unexpected error.
         """
+
+        #TODO -
+        # 1) handle notification updates to same object. Requires some thought.
+        # 2) Verify parameters of models
+
         try:
-            #TODO verify this is correct
+
+            # Get a db session
             db_session = self.get_database_session()
 
-            # Write notification object to db to ensure we don't
-            # lose the notification if this svc goes down.
+            # Validate inputs
+            users = []
+            self._validate_notify_params(db_session, users, context, notification)
 
+            # If input notification doesn't specify a
+            # unique token, then generate one.
+            if not notification.token:
+                notification.token = uuid.uuid4().hex
 
+            # Create Notification Model
+            notification_model = NotificationModel(
+                token=notification.token,
+                context=context,
+                users=users,
+                subject=notification.subject,
+                html_text=notification.htmlText,
+                plain_text=notification.plainText
+            )
+            db_session.add(notification_model)
 
+            # Create NotificationJobs
+            for user_id in notification.recipientUserIds:
+                job = NotificationJob(
+                    notification=notification_model,
+                    recipient_id=user_id,
+                    priority=notification.priority, #TODO create map, see chat-service
+                    retries_remaining=settings.MAX_RETRY_ATTEMPTS
+                )
+                db_session.add(job)
 
+            db_session.commit()
 
-            # Parse notification object, create job for each user
-            # Return notification object with updated Token attribute
+            return notification
 
-
+        except InvalidNotificationException as error:
+            self.log.exception(error)
+            raise InvalidNotificationException()
         except Exception as error:
             self.log.exception(error)
             raise UnavailableException(str(error))

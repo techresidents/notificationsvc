@@ -3,11 +3,13 @@ import logging
 
 from sqlalchemy.sql import func
 
-from trchatsvc.gen.ttypes import Message
+from trnotificationsvc.gen.ttypes import NotificationPriority, Notification
 from trpycore.timezone import tz
-from trsvcscore.db.models import ChatPersistJob, ChatMessage, ChatMessageFormatType
+from trsvcscore.db.models import Notification
 
 from exceptions import DuplicateJobException
+
+
 
 class Notifier(object):
     """ Responsible for sending notifications.
