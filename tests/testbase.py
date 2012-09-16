@@ -45,7 +45,7 @@ class NotificationTestService(DefaultService):
 
 class IntegrationTestCase(unittest.TestCase):
     """
-    This class assumes that the service is already running.
+    This class creates and starts one instance of the notification service.
     """
 
     @classmethod
