@@ -17,8 +17,8 @@ exception InvalidNotificationException {
 
 /* Notification Priority */
 enum NotificationPriority {
-    LOW_PRIORITY,
     DEFAULT_PRIORITY,
+    LOW_PRIORITY,
     HIGH_PRIORITY,
 }
 
@@ -26,6 +26,7 @@ enum NotificationPriority {
 /*
 Notification
    token: optional ID. Used to support cancel() functionality in the Notification Service.
+   notBefore: the time to begin processing the notification
    context: the request context
    priority: the notification priority
    recipientUserIds: list of recipient user IDs to receive this notification
@@ -35,11 +36,12 @@ Notification
 */
 struct Notification {
     1: optional string token,
-    2: NotificationPriority priority,
-    3: list<string> recipientUserIds,
-    4: string subject,
-    5: optional string htmlText,
-    6: optional string plainText,
+    2: optional double notBefore,
+    3: NotificationPriority priority,
+    4: list<string> recipientUserIds,
+    5: string subject,
+    6: optional string htmlText,
+    7: optional string plainText,
 }
 
 

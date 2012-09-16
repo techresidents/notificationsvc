@@ -2,6 +2,7 @@ import logging
 import uuid
 
 from trpycore.thread.util import join
+from trpycore.timezone import tz
 from trsvcscore.db.models.notification_models import Notification as NotificationModel
 from trsvcscore.db.models.notification_models import  NotificationUser, NotificationJob
 from trsvcscore.db.models.django_models import User
@@ -11,6 +12,7 @@ from trnotificationsvc.gen.ttypes import Notification, NotificationPriority, Una
 
 import settings
 
+from constants import NOTIFICATION_PRIORITY_TYPE_IDS
 from jobmonitor import NotificationJobMonitor
 
 
@@ -57,7 +59,7 @@ class NotificationServiceHandler(TNotificationService.Iface, ServiceHandler):
 
 
     def _validate_notify_params(self, db_session, users, context, notification):
-        """Validate notify() input params
+        """Validate input params of the notify() method
 
         As a performance optimization, when this method validates
         each recipient user ID it will append the User to the input
@@ -66,7 +68,13 @@ class NotificationServiceHandler(TNotificationService.Iface, ServiceHandler):
         if not context:
             raise InvalidNotificationException()
 
+        if not isinstance(notification.priority, NotificationPriority):
+            raise InvalidNotificationException()
+
         if not notification.subject:
+            raise InvalidNotificationException()
+
+        if (not notification.htmlText) and (not notification.plainText):
             raise InvalidNotificationException()
 
         if not len(notification.recipientUserIds):
@@ -77,7 +85,7 @@ class NotificationServiceHandler(TNotificationService.Iface, ServiceHandler):
             for user_id in notification.recipientUserIds:
                 user = db_session.query(User).filter(User.id==user_id).one()
                 users.append(user)
-        except Exception as e:
+        except Exception:
             raise InvalidNotificationException()
 
 
@@ -104,10 +112,6 @@ class NotificationServiceHandler(TNotificationService.Iface, ServiceHandler):
             UnavailableException for any other unexpected error.
         """
 
-        #TODO -
-        # 1) handle notification updates to same object. Requires some thought.
-        # 2) Verify parameters of models
-
         try:
 
             # Get a db session
@@ -133,12 +137,20 @@ class NotificationServiceHandler(TNotificationService.Iface, ServiceHandler):
             )
             db_session.add(notification_model)
 
+            # If notification specified a start-processing-time
+            # convert it to UTC DateTime object.
+            processing_start_time = None
+            if notification.notBefore is not None:
+                processing_start_time = tz.timestamp_to_utc(notification.notBefore)
+
             # Create NotificationJobs
             for user_id in notification.recipientUserIds:
                 job = NotificationJob(
+                    not_before=processing_start_time,
                     notification=notification_model,
                     recipient_id=user_id,
-                    priority=notification.priority, #TODO create map, see chat-service
+                    priority=NOTIFICATION_PRIORITY_TYPE_IDS[
+                             NotificationPriority._VALUES_TO_NAMES[notification.priority]],
                     retries_remaining=settings.MAX_RETRY_ATTEMPTS
                 )
                 db_session.add(job)
