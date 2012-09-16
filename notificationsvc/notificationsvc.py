@@ -17,7 +17,7 @@ from tridlcore.gen.ttypes import Status
 from trpycore.process.pid import pidfile, PidFileException
 from trsvcscore.service.default import DefaultService
 from trsvcscore.service.server.default import ThriftServer
-from trpersistsvc.gen import TPersistService
+from trnotificationsvc.gen import TNotificationService
 
 from handler import NotificationServiceHandler
 
@@ -33,7 +33,7 @@ class NotificationService(DefaultService):
             interface=settings.THRIFT_SERVER_INTERFACE,
             port=settings.THRIFT_SERVER_PORT,
             handler=handler,
-            processor=TPersistService.Processor(handler),
+            processor=TNotificationService.Processor(handler),
             threads=1)
 
         super(NotificationService, self).__init__(
