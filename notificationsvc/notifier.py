@@ -9,9 +9,8 @@ from trpycore.timezone import tz
 from trsvcscore.db.models import NotificationJob
 from trsvcscore.db.job import DatabaseJob, DatabaseJobQueue, JobOwned, QueueEmpty, QueueStopped
 
-#TODO remove DuplicateJobException class if no longer needed
-from exceptions import DuplicateJobException
 
+#TODO delete exception.py if not needed anymore
 
 
 class Notifier(object):

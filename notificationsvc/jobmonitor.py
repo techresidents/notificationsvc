@@ -44,6 +44,7 @@ class NotificationThreadPool(ThreadPool):
         notifier.send(database_job)
 
 
+
 class NotificationJobMonitor(object):
     """
     NotificationJobMonitor monitors for new notification jobs, and delegates
@@ -59,26 +60,70 @@ class NotificationJobMonitor(object):
                 chat requiring scheduling.
         """
         self.log = logging.getLogger(__name__)
+        self.poll_seconds = poll_seconds
         self.threadpool = NotificationThreadPool(num_threads, db_session_factory)
-        self.db_queue = DatabaseJobQueue(
+        self.db_job_queue = DatabaseJobQueue(
             owner='notificationsvc',
             model_class=NotificationJob,
             db_session_factory=db_session_factory,
             poll_seconds=poll_seconds,
         )
 
+        self.monitorThread = threading.Thread(target=self.run)
+        self.exit = threading.Condition() #conditional variable allowing speedy wakeup on exit.
+        self.running = False
+
     def start(self):
-        """Start the job monitor"""
-        self.db_queue.start()
-        while True:
+        """Start job monitor."""
+        if not self.running:
+            self.running = True
+            self.threadpool.start()
+            self.monitorThread.start()
+            self.db_job_queue.start()
+
+
+    def run(self):
+        """Monitor thread run method."""
+        while self.running:
             try:
+                self.log.info("NotificationJobMonitor is checking for new jobs to process...")
+
                 # delegate jobs to threadpool for processing
-                self.threadpool.put(self.db_queue.get())
+                self.threadpool.put(self.db_job_queue.get())
+
+            except QueueEmpty:
+                #TODO what to do here?
+                pass
             except QueueStopped:
                 break
-            except Exception:
-                pass
-                # TODO? Okay to just fail. Think so.
+            except Exception as error:
+                self.log.exception(error)
 
+            #TODO don't think I need this anymore either
+            # Acquire exit conditional variable
+            # and call wait on this to sleep the
+            # necessary time between db checks.
+            # Waiting on a conditional variable,
+            # allows the wait to be interrupted
+            # when stop() is called.
+            with self.exit:
+                end = time.time() + self.poll_seconds
+                # wait in loop, rechecking condition to combat spurious wakeups.
+                while self.running and (time.time() < end):
+                    remaining_wait = end - time.time()
+                    self.exit.wait(remaining_wait)
 
+    def stop(self):
+        """Stop monitor."""
+        if self.running:
+            self.running = False
+            #acquire conditional variable and wake up monitorThread run method.
+            with self.exit:
+                self.exit.notify_all()
+            self.threadpool.stop()
+            self.db_job_queue.stop()
 
+    def join(self, timeout):
+        """Join all threads."""
+        # TODO see archive service for minor tweaks
+        join([self.threadpool, self.db_job_queue, self.monitorThread], timeout)
