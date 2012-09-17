@@ -1,6 +1,8 @@
 import logging
 import uuid
 
+from sqlalchemy.sql import func
+
 from trpycore.thread.util import join
 from trpycore.timezone import tz
 from trsvcscore.db.models.notification_models import Notification as NotificationModel
@@ -8,7 +10,7 @@ from trsvcscore.db.models.notification_models import  NotificationUser, Notifica
 from trsvcscore.db.models.django_models import User
 from trsvcscore.service.handler.service import ServiceHandler
 from trnotificationsvc.gen import TNotificationService
-from trnotificationsvc.gen.ttypes import Notification, NotificationPriority, UnavailableException, InvalidNotificationException
+from trnotificationsvc.gen.ttypes import NotificationPriority, UnavailableException, InvalidNotificationException
 
 import settings
 
@@ -131,34 +133,37 @@ class NotificationServiceHandler(TNotificationService.Iface, ServiceHandler):
 
             # Create Notification Model
             notification_model = NotificationModel(
+                created=func.current_timestamp(),
                 token=notification.token,
                 context=context,
-                users=users,
+                recipients=users,
                 subject=notification.subject,
                 html_text=notification.htmlText,
                 plain_text=notification.plainText
             )
-            #db_session.add(notification_model)
+            db_session.add(notification_model)
 
             # If notification specified a start-processing-time
             # convert it to UTC DateTime object.
-            processing_start_time = None
             if notification.notBefore is not None:
                 processing_start_time = tz.timestamp_to_utc(notification.notBefore)
+            else:
+                processing_start_time = func.current_timestamp()
 
             # Create NotificationJobs
             for user_id in notification.recipientUserIds:
                 job = NotificationJob(
+                    created=func.current_timestamp(),
                     not_before=processing_start_time,
                     notification=notification_model,
                     recipient_id=user_id,
-                    priority=NOTIFICATION_PRIORITY_TYPE_IDS[
+                    priority_id=NOTIFICATION_PRIORITY_TYPE_IDS[
                              NotificationPriority._VALUES_TO_NAMES[notification.priority]],
                     retries_remaining=settings.MAX_RETRY_ATTEMPTS
                 )
-                #db_session.add(job)
+                db_session.add(job)
 
-            #db_session.commit()
+            db_session.commit()
 
             return notification
 
