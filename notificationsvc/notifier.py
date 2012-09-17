@@ -1,12 +1,15 @@
 
+import copy
 import logging
 
 from sqlalchemy.sql import func
 
 from trnotificationsvc.gen.ttypes import NotificationPriority, Notification
 from trpycore.timezone import tz
-from trsvcscore.db.models import Notification
+from trsvcscore.db.models import NotificationJob
+from trsvcscore.db.job import DatabaseJob, DatabaseJobQueue, JobOwned, QueueEmpty, QueueStopped
 
+#TODO remove DuplicateJobException class if no longer needed
 from exceptions import DuplicateJobException
 
 
@@ -15,12 +18,37 @@ class Notifier(object):
     """ Responsible for sending notifications.
     """
 
-    def __init__(self, db_session_factory, job_id):
+    def __init__(self, db_session_factory):
         self.log = logging.getLogger(__name__)
         self.db_session_factory = db_session_factory
-        self.job_id = job_id
 
-    def create_db_session(self):
+    def _create_new_job(self, failed_job):
+        """Create a new NotificationJob from a failed job.
+
+        This method creates a new Notification Job from a
+        job that failed to process successfully. The job
+        is added to the db.
+        """
+        try:
+            #create new job in db to retry.
+            if failed_job.retries_remaining > 0:
+                new_job = copy.deepcopy(failed_job)
+                new_job.created = func.current_timestamp()
+                new_job.retries_remaining = failed_job.retries_remaining-1
+
+                # Add job to db
+                db_session = self.create_db_session()
+                db_session.add(new_job)
+                db_session.commit()
+        except Exception as e:
+            self.log.exception(e)
+            if db_session:
+                db_session.rollback()
+        finally:
+            if db_session:
+                db_session.close()
+
+    def _create_db_session(self):
         """Create  new sqlalchemy db session.
 
         Returns:
@@ -28,29 +56,28 @@ class Notifier(object):
         """
         return self.db_session_factory()
 
-    def notify(self):
-        """ Send notification.
-        """
+    def send(self, database_job):
         try:
-            pass
-            #self._start_chat_persist_job()
-            self._notify()
-            #self._end_chat_persist_job()
+            with database_job as job:
 
-        except DuplicateJobException as warning:
-            self.log.warning("Notification job with job_id=%d already claimed. Stopping processing." % self.job_id)
+                # Claiming the job and finishing the job are
+                # handled by this context manager. Here, we
+                # specify how to process the job.
+
+                # Read notification
+                notification = job.notification
+                # TODO
+                # Call into email service wrapper
+                # return async object
+                pass
+
+        except JobOwned:
             # This means that the NotificationJob was claimed just before
             # this thread claimed it. Stop processing the job. There's
             # no need to abort the job since no processing of the job
             # has occurred.
-
-        except Exception as e:
-            #self._abort_chat_persist_job()
+            self.log.warning("Notification job with job_id=%d already claimed. Stopping processing." % job.id)
             pass
-
-
-    def _notify(self):
-        pass
-        # Read notification based upon job_id
-        # Call into email service wrapper
-        # return async object
+        except Exception:
+            #failure during processing.
+            self._create_new_job(job)
