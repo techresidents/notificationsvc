@@ -26,7 +26,7 @@ enum NotificationPriority {
 /*
 Notification
    token: optional ID. Used to support cancel() functionality in the Notification Service.
-   notBefore: the time to begin processing the notification
+   notBefore: the time to begin processing the notification (epoch timestamp)
    context: the request context
    priority: the notification priority
    recipientUserIds: list of recipient user IDs to receive this notification

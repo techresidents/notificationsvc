@@ -41,6 +41,7 @@ class NotificationTest(IntegrationTestCase):
 
         cls.priority = NotificationPriority.DEFAULT_PRIORITY
         cls.max_retry_attempts = settings.MAX_RETRY_ATTEMPTS
+        cls.not_before = tz.timestamp()
         cls.context = 'testContext'
         cls.token = 'testToken'
         cls.recipients = [1] # list of user IDs
@@ -168,7 +169,8 @@ class NotificationTest(IntegrationTestCase):
             if updated_notification is not None:
                 self._cleanup(self._get_notification_model(self.context, updated_notification))
 
-    def test_notify(self):
+
+    def test_notify_single_recipient(self):
         """Simple test case.
 
         Test a notification with one intended recipient
@@ -198,8 +200,8 @@ class NotificationTest(IntegrationTestCase):
             self.assertEqual(
                 NOTIFICATION_PRIORITY_TYPE_IDS[NotificationPriority._VALUES_TO_NAMES[self.priority]],
                 notification_job_model.priority_id)
+            self.assertAlmostEqual(self.not_before, tz.utc_to_timestamp(notification_job_model.not_before), places=0) #round to nearest full second
             self.assertIsNotNone(notification_job_model.created)
-            self.assertIsNotNone(notification_job_model.not_before)
             self.assertIsNone(notification_job_model.start)
             self.assertIsNone(notification_job_model.end)
             self.assertIsNone(notification_job_model.owner)
@@ -211,6 +213,11 @@ class NotificationTest(IntegrationTestCase):
                 self._cleanup(notification_model)
 
 
+    def test_notify_multiple_recipients(self):
+        """Testing notification with multiple recipients
+        """
+        # TODO
+        pass
 
 
 if __name__ == '__main__':
