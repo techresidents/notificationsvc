@@ -66,27 +66,30 @@ class NotificationServiceHandler(TNotificationService.Iface, ServiceHandler):
         users list.
         """
         if not context:
-            raise InvalidNotificationException()
+            raise InvalidNotificationException('Invalid context')
 
-        if not isinstance(notification.priority, NotificationPriority):
-            raise InvalidNotificationException()
+        if notification.priority != NotificationPriority.DEFAULT_PRIORITY and\
+            notification.priority != NotificationPriority.LOW_PRIORITY and\
+            notification.priority != NotificationPriority.HIGH_PRIORITY:
+            raise InvalidNotificationException('Invalid priority')
 
         if not notification.subject:
-            raise InvalidNotificationException()
+            raise InvalidNotificationException('Invalid subject')
 
         if (not notification.htmlText) and (not notification.plainText):
-            raise InvalidNotificationException()
+            raise InvalidNotificationException('Invalid body')
 
-        if not len(notification.recipientUserIds):
-            raise InvalidNotificationException()
+        if notification.recipientUserIds is None or\
+            len(notification.recipientUserIds) <= 0:
+            raise InvalidNotificationException('Invalid recipients')
 
         try:
             # Ensure the specified recipients exist
             for user_id in notification.recipientUserIds:
                 user = db_session.query(User).filter(User.id==user_id).one()
                 users.append(user)
-        except Exception:
-            raise InvalidNotificationException()
+        except Exception as e:
+            raise InvalidNotificationException('Invalid user')
 
 
 
@@ -135,7 +138,7 @@ class NotificationServiceHandler(TNotificationService.Iface, ServiceHandler):
                 html_text=notification.htmlText,
                 plain_text=notification.plainText
             )
-            db_session.add(notification_model)
+            #db_session.add(notification_model)
 
             # If notification specified a start-processing-time
             # convert it to UTC DateTime object.
@@ -153,9 +156,9 @@ class NotificationServiceHandler(TNotificationService.Iface, ServiceHandler):
                              NotificationPriority._VALUES_TO_NAMES[notification.priority]],
                     retries_remaining=settings.MAX_RETRY_ATTEMPTS
                 )
-                db_session.add(job)
+                #db_session.add(job)
 
-            db_session.commit()
+            #db_session.commit()
 
             return notification
 

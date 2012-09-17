@@ -1,3 +1,4 @@
+import copy
 import os
 import sys
 import unittest
@@ -26,7 +27,7 @@ class NotificationTest(IntegrationTestCase):
         cls.notification = Notification(
             token='testToken',
             priority=NotificationPriority.DEFAULT_PRIORITY,
-            recipientUserIds=['0'],
+            recipientUserIds=[1],
             subject='testSubject',
             plainText='testNotificationBody'
         )
@@ -43,29 +44,38 @@ class NotificationTest(IntegrationTestCase):
             self.service_proxy.notify(None, self.notification)
 
         # Invalid priority
-        invalid_notification = self.notification
+        invalid_notification = copy.deepcopy(self.notification)
         invalid_notification.priority = None
         with self.assertRaises(InvalidNotificationException):
             self.service_proxy.notify(self.context, invalid_notification)
 
         # Invalid subject
-        invalid_notification = self.notification
+        invalid_notification = copy.deepcopy(self.notification)
         invalid_notification.subject = None
         with self.assertRaises(InvalidNotificationException):
             self.service_proxy.notify(self.context, invalid_notification)
 
         # Invalid recipients
-        invalid_notification = self.notification
+        invalid_notification = copy.deepcopy(self.notification)
         invalid_notification.recipientUserIds = None
         with self.assertRaises(InvalidNotificationException):
             self.service_proxy.notify(self.context, invalid_notification)
 
         # Invalid notification body
-        invalid_notification = self.notification
+        invalid_notification = copy.deepcopy(self.notification)
         invalid_notification.plainText = None
         invalid_notification.htmlText = None
         with self.assertRaises(InvalidNotificationException):
             self.service_proxy.notify(self.context, invalid_notification)
+
+
+    def test_notify_tokenGeneration(self):
+
+        no_token_notification = copy.deepcopy(self.notification)
+        no_token_notification.token = None
+        updated_notification = self.service_proxy.notify(self.context, no_token_notification)
+        self.assertIsNotNone(updated_notification.token)
+
 
 
 if __name__ == '__main__':

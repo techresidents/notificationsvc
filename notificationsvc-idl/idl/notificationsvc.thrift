@@ -38,7 +38,7 @@ struct Notification {
     1: optional string token,
     2: optional double notBefore,
     3: NotificationPriority priority,
-    4: list<string> recipientUserIds,
+    4: list<i32> recipientUserIds,
     5: string subject,
     6: optional string htmlText,
     7: optional string plainText,
