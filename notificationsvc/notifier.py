@@ -65,9 +65,6 @@ class Notifier(object):
                 # specify how to process the job.
 
                 # Call into email service wrapper
-                print '((((((((((((((('
-                print 'sending email via provider'
-                print '((((((((((((((('
                 self.email_provider.send(
                     [job.recipient.email],
                     job.notification.subject,

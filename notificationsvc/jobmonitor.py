@@ -41,9 +41,6 @@ class NotificationThreadPool(ThreadPool):
             database_job: DatabaseJob object, or objected derived from DatabaseJob
         """
         try:
-            print '******************'
-            print 'processing job....'
-            print '******************'
             with self.notifier_pool.get() as notifier:
                 notifier.send(database_job)
 
