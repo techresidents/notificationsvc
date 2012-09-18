@@ -17,9 +17,10 @@ class Notifier(object):
     """ Responsible for sending notifications.
     """
 
-    def __init__(self, db_session_factory):
+    def __init__(self, db_session_factory, email_provider):
         self.log = logging.getLogger(__name__)
         self.db_session_factory = db_session_factory
+        self.email_provider = email_provider
 
     def _create_new_job(self, failed_job):
         """Create a new NotificationJob from a failed job.
@@ -30,7 +31,7 @@ class Notifier(object):
         """
         try:
             #create new job in db to retry.
-            if failed_job.retries_remaining > 0:  #TODO broken, need to merge job with db_session
+            if failed_job.retries_remaining > 0:
                 new_job = copy.deepcopy(failed_job)
                 new_job.created = func.current_timestamp()
                 new_job.retries_remaining = failed_job.retries_remaining-1
@@ -63,12 +64,19 @@ class Notifier(object):
                 # handled by this context manager. Here, we
                 # specify how to process the job.
 
-                # Read notification
-                notification = job.notification
-                # TODO
                 # Call into email service wrapper
+                print '((((((((((((((('
+                print 'sending email via provider'
+                print '((((((((((((((('
+                self.email_provider.send(
+                    [job.recipient.email],
+                    job.notification.subject,
+                    job.notification.plainText,
+                    job.notification.htmlText
+                )
+
                 # return async object
-                pass
+                # TODO
 
         except JobOwned:
             # This means that the NotificationJob was claimed just before

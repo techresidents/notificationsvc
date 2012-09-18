@@ -3,6 +3,8 @@ import uuid
 
 from sqlalchemy.sql import func
 
+from trpycore.factory.base import Factory
+from trpycore.pool.queue import QueuePool
 from trpycore.thread.util import join
 from trpycore.timezone import tz
 from trsvcscore.db.models.notification_models import Notification as NotificationModel
@@ -14,9 +16,9 @@ from trnotificationsvc.gen.ttypes import NotificationPriority, UnavailableExcept
 
 import settings
 
-from constants import NOTIFICATION_PRIORITY_TYPE_IDS
-from jobmonitor import NotificationJobMonitor
-
+from constants import NOTIFICATION_PRIORITY_VALUES
+from jobmonitor import NotificationJobMonitor, NotificationThreadPool
+from notifier import Notifier
 
 
 class NotificationServiceHandler(TNotificationService.Iface, ServiceHandler):
@@ -38,26 +40,47 @@ class NotificationServiceHandler(TNotificationService.Iface, ServiceHandler):
 
         self.log = logging.getLogger("%s.%s" % (__name__, NotificationServiceHandler.__name__))
 
+        # Create pool of Notifier objects which will do the
+        # actual work of sending notifications
+        def notifier_factory():
+            return Notifier(
+                self.get_database_session(),
+                settings.EMAIL_PROVIDER_FACTORY()
+            )
+        self.notifier_pool = QueuePool(
+            size=settings.NOTIFIER_POOL_SIZE,
+            factory=Factory(notifier_factory))
+
+        # Create pool of threads to manage the work
+        self.thread_pool = NotificationThreadPool(
+            num_threads=settings.NOTIFIER_THREADS,
+            db_session_factory=self.get_database_session(),
+            notifier_pool=self.notifier_pool)
+
         # Create job monitor which scans for new jobs
-        # to process and delegates the real work.
+        # to process and delegates to the thread pool
         self.job_monitor = NotificationJobMonitor(
-                settings.NOTIFIER_THREADS,
-                self.get_database_session,
-                settings.NOTIFIER_POLL_SECONDS)
-    
+            db_session_factory=self.get_database_session,
+            thread_pool=self.thread_pool,
+            poll_seconds=settings.NOTIFIER_POLL_SECONDS)
+
+
+
     def start(self):
         """Start handler."""
         super(NotificationServiceHandler, self).start()
+        self.thread_pool.start()
         self.job_monitor.start()
 
     def stop(self):
         """Stop handler."""
         self.job_monitor.stop()
+        self.thread_pool.stop()
         super(NotificationServiceHandler, self).stop()
 
     def join(self, timeout=None):
         """Join handler."""
-        join([self.job_monitor, super(NotificationServiceHandler, self)], timeout)
+        join([self.thread_pool, self.job_monitor, super(NotificationServiceHandler, self)], timeout)
 
 
     def _validate_notify_params(self, db_session, users, context, notification):
@@ -136,8 +159,8 @@ class NotificationServiceHandler(TNotificationService.Iface, ServiceHandler):
                 created=func.current_timestamp(),
                 token=notification.token,
                 context=context,
-                priority=NOTIFICATION_PRIORITY_TYPE_IDS[
-                         NotificationPriority._VALUES_TO_NAMES[notification.priority]], #TODO need this map?
+                priority=NOTIFICATION_PRIORITY_VALUES[
+                         NotificationPriority._VALUES_TO_NAMES[notification.priority]],
                 recipients=users,
                 subject=notification.subject,
                 html_text=notification.htmlText,
@@ -159,7 +182,7 @@ class NotificationServiceHandler(TNotificationService.Iface, ServiceHandler):
                     not_before=processing_start_time,
                     notification=notification_model,
                     recipient_id=user_id,
-                    priority=NOTIFICATION_PRIORITY_TYPE_IDS[
+                    priority=NOTIFICATION_PRIORITY_VALUES[
                              NotificationPriority._VALUES_TO_NAMES[notification.priority]],
                     retries_remaining=settings.MAX_RETRY_ATTEMPTS
                 )

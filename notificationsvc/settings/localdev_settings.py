@@ -1,6 +1,7 @@
 import socket
 
 from default_settings import *
+import providers.factory
 
 ENV = "localdev"
 
@@ -25,9 +26,19 @@ ZOOKEEPER_HOSTS = ["localhost:2181"]
 
 #Notification svc settings
 NOTIFIER_THREADS = 1
+NOTIFIER_POOL_SIZE = 1
 NOTIFIER_POLL_SECONDS = 60
 MAX_RETRY_ATTEMPTS = 3
 SECS_BETWEEN_RETRY_ATTEMPTS = 1000
+
+# Provider Factory settings
+EMAIL_PROVIDER_FACTORY = providers.factory.smtp_provider_factory
+
+# SMTP settings
+SMTP_USERNAME = 'techresidents'
+SMTP_PASSWORD = 'password'
+SMTP_SERVER = 'smtp.sendgrid.net'
+SMTP_PORT = 587
 
 #Logging settings
 LOGGING = {

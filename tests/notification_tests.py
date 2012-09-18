@@ -15,7 +15,7 @@ from trsvcscore.db.models.notification_models import Notification as Notificatio
 from trsvcscore.db.models.notification_models import NotificationJob as NotificationJobModel
 from trsvcscore.db.models.notification_models import NotificationUser as NotificationUserModel
 
-from constants import NOTIFICATION_PRIORITY_TYPE_IDS
+from constants import NOTIFICATION_PRIORITY_VALUES
 from testbase import IntegrationTestCase
 
 import settings
@@ -138,7 +138,7 @@ class NotificationTest(IntegrationTestCase):
         self.assertIsNotNone(model.created)
         self.assertIsNotNone(model.token)
         self.assertEqual(
-            NOTIFICATION_PRIORITY_TYPE_IDS[NotificationPriority._VALUES_TO_NAMES[notification.priority]], #TODO this needed?
+            NOTIFICATION_PRIORITY_VALUES[NotificationPriority._VALUES_TO_NAMES[notification.priority]],
             model.priority)
         self.assertEqual(expected_context, model.context)
         self.assertEqual(notification.subject, model.subject)
@@ -159,7 +159,7 @@ class NotificationTest(IntegrationTestCase):
         """
         self.assertEqual(expected_recipient_id, model.recipient_id)
         self.assertEqual(
-            NOTIFICATION_PRIORITY_TYPE_IDS[NotificationPriority._VALUES_TO_NAMES[notification.priority]], #TODO
+            NOTIFICATION_PRIORITY_VALUES[NotificationPriority._VALUES_TO_NAMES[notification.priority]],
             model.priority)
         self.assertAlmostEqual(notification.notBefore, tz.utc_to_timestamp(model.not_before), places=7)
         self.assertIsNotNone(model.created)

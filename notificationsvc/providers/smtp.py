@@ -7,11 +7,20 @@ class SmtpProvider(EmailProvider):
     """SmtpProvider implements the EmailProvider base class.
     """
 
-    def __init__(self):
+    def __init__(
+            self,
+            username,
+            password,
+            server,
+            port
+    ):
         """SmtpProvider constructor.
 
         Args:
-            name: string for the name of the provider
+            username
+            password
+            server
+            port
         """
         super(SmtpProvider, self).__init__('SmtpEmailProvider')
 
@@ -26,3 +35,4 @@ class SmtpProvider(EmailProvider):
             html_body: html text message body
         """
         pass
+        # TODO research python SMTP example
