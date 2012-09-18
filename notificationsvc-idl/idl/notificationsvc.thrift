@@ -17,9 +17,9 @@ exception InvalidNotificationException {
 
 /* Notification Priority */
 enum NotificationPriority {
+    HIGH_PRIORITY,
     DEFAULT_PRIORITY,
     LOW_PRIORITY,
-    HIGH_PRIORITY,
 }
 
 

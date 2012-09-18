@@ -128,22 +128,25 @@ class NotificationTest(IntegrationTestCase):
             raise e
 
 
-    def _validate_notification_model(self, model, context, notification):
+    def _validate_notification_model(self, model, notification, expected_context):
         """Encapsulate code to validate a Notification model.
         Args:
             model: the Notification model to validate
-            context: the context the model was created from
             notification: the Thrift Notification the model was created from
+            expected_context: the context the model was created from
         """
         self.assertIsNotNone(model.created)
         self.assertIsNotNone(model.token)
-        self.assertEqual(context, model.context)
+        self.assertEqual(
+            NOTIFICATION_PRIORITY_TYPE_IDS[NotificationPriority._VALUES_TO_NAMES[notification.priority]], #TODO this needed?
+            model.priority)
+        self.assertEqual(expected_context, model.context)
         self.assertEqual(notification.subject, model.subject)
         self.assertEqual(notification.plainText, model.plain_text)
         self.assertEqual(notification.htmlText, model.html_text)
         self.assertEqual(len(notification.recipientUserIds), len(model.recipients))
-        for index, user in enumerate(model.recipients):
-            self.assertEqual(notification.recipientUserIds[index], user.id)
+        for user in model.recipients:
+            self.assertIn(user.id, notification.recipientUserIds)
 
 
     def _validate_notificationjob_model(self, model, notification, expected_recipient_id, expected_retries_remaining):
@@ -156,8 +159,8 @@ class NotificationTest(IntegrationTestCase):
         """
         self.assertEqual(expected_recipient_id, model.recipient_id)
         self.assertEqual(
-            NOTIFICATION_PRIORITY_TYPE_IDS[NotificationPriority._VALUES_TO_NAMES[notification.priority]],
-            model.priority_id)
+            NOTIFICATION_PRIORITY_TYPE_IDS[NotificationPriority._VALUES_TO_NAMES[notification.priority]], #TODO
+            model.priority)
         self.assertAlmostEqual(notification.notBefore, tz.utc_to_timestamp(model.not_before), places=7)
         self.assertIsNotNone(model.created)
         self.assertIsNone(model.start)
@@ -227,7 +230,7 @@ class NotificationTest(IntegrationTestCase):
                 filter(NotificationModel.context==self.context).\
                 filter(NotificationModel.token==self.token).\
                 one()
-            self._validate_notification_model(notification_model, self.context, self.notification)
+            self._validate_notification_model(notification_model, self.notification, self.context)
 
             # Verify NotificationJob model
             notification_job_model = self.db_session.query(NotificationJobModel).\
@@ -261,7 +264,7 @@ class NotificationTest(IntegrationTestCase):
                 filter(NotificationModel.context==self.context).\
                 filter(NotificationModel.token==self.token).\
                 one()
-            self._validate_notification_model(notification_model, self.context, mult_recipient_notification)
+            self._validate_notification_model(notification_model, mult_recipient_notification, self.context)
 
             # Verify NotificationJob model
             notification_job_models = self.db_session.query(NotificationJobModel).\

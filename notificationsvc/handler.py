@@ -6,7 +6,7 @@ from sqlalchemy.sql import func
 from trpycore.thread.util import join
 from trpycore.timezone import tz
 from trsvcscore.db.models.notification_models import Notification as NotificationModel
-from trsvcscore.db.models.notification_models import  NotificationUser, NotificationJob
+from trsvcscore.db.models.notification_models import NotificationJob as NotificationJobModel
 from trsvcscore.db.models.django_models import User
 from trsvcscore.service.handler.service import ServiceHandler
 from trnotificationsvc.gen import TNotificationService
@@ -136,6 +136,8 @@ class NotificationServiceHandler(TNotificationService.Iface, ServiceHandler):
                 created=func.current_timestamp(),
                 token=notification.token,
                 context=context,
+                priority=NOTIFICATION_PRIORITY_TYPE_IDS[
+                         NotificationPriority._VALUES_TO_NAMES[notification.priority]], #TODO need this map?
                 recipients=users,
                 subject=notification.subject,
                 html_text=notification.htmlText,
@@ -152,12 +154,12 @@ class NotificationServiceHandler(TNotificationService.Iface, ServiceHandler):
 
             # Create NotificationJobs
             for user_id in notification.recipientUserIds:
-                job = NotificationJob(
+                job = NotificationJobModel(
                     created=func.current_timestamp(),
                     not_before=processing_start_time,
                     notification=notification_model,
                     recipient_id=user_id,
-                    priority_id=NOTIFICATION_PRIORITY_TYPE_IDS[
+                    priority=NOTIFICATION_PRIORITY_TYPE_IDS[
                              NotificationPriority._VALUES_TO_NAMES[notification.priority]],
                     retries_remaining=settings.MAX_RETRY_ATTEMPTS
                 )
