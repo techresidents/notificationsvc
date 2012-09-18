@@ -30,7 +30,7 @@ class Notifier(object):
         """
         try:
             #create new job in db to retry.
-            if failed_job.retries_remaining > 0:
+            if failed_job.retries_remaining > 0:  #TODO broken, need to merge job with db_session
                 new_job = copy.deepcopy(failed_job)
                 new_job.created = func.current_timestamp()
                 new_job.retries_remaining = failed_job.retries_remaining-1
