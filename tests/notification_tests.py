@@ -49,6 +49,7 @@ class NotificationTest(IntegrationTestCase):
         cls.plain_text = 'testNotificationBody'
         cls.html_text = 'testNotificationBody'
         cls.notification = Notification(
+            notBefore=cls.not_before,
             token=cls.token,
             priority=cls.priority,
             recipientUserIds=cls.recipients,
@@ -127,6 +128,47 @@ class NotificationTest(IntegrationTestCase):
             raise e
 
 
+    def _validate_notification_model(self, model, context, notification):
+        """Encapsulate code to validate a Notification model.
+        Args:
+            model: the Notification model to validate
+            context: the context the model was created from
+            notification: the Thrift Notification the model was created from
+        """
+        self.assertIsNotNone(model.created)
+        self.assertIsNotNone(model.token)
+        self.assertEqual(context, model.context)
+        self.assertEqual(notification.subject, model.subject)
+        self.assertEqual(notification.plainText, model.plain_text)
+        self.assertEqual(notification.htmlText, model.html_text)
+        self.assertEqual(len(notification.recipientUserIds), len(model.recipients))
+        for index, user in enumerate(model.recipients):
+            self.assertEqual(notification.recipientUserIds[index], user.id)
+
+
+    def _validate_notificationjob_model(self, model, notification, expected_recipient_id, expected_retries_remaining):
+        """Encapsulate code to validate a NotificationJob model.
+        Args:
+            model: the NotificationJob model to validate
+            notification: the Thrift Notification the model was created from
+            expected_recipient_id: the ID of the expected recipient
+            expected_retries_remaining: the expected number of retries remaining
+        """
+        self.assertEqual(expected_recipient_id, model.recipient_id)
+        self.assertEqual(
+            NOTIFICATION_PRIORITY_TYPE_IDS[NotificationPriority._VALUES_TO_NAMES[notification.priority]],
+            model.priority_id)
+        self.assertAlmostEqual(notification.notBefore, tz.utc_to_timestamp(model.not_before), places=7)
+        self.assertIsNotNone(model.created)
+        self.assertIsNone(model.start)
+        self.assertIsNone(model.end)
+        self.assertIsNone(model.owner)
+        self.assertIsNone(model.successful)
+        self.assertEqual(expected_retries_remaining, model.retries_remaining)
+
+
+
+
     def test_notify_invalidNotification(self):
 
         # Invalid context
@@ -177,7 +219,7 @@ class NotificationTest(IntegrationTestCase):
         """
 
         try:
-            # Write Notification and NotificationJob to db
+            # Create & write Notification and NotificationJob to db
             self.service_proxy.notify(self.context, self.notification)
 
             # Verify Notification model
@@ -185,28 +227,18 @@ class NotificationTest(IntegrationTestCase):
                 filter(NotificationModel.context==self.context).\
                 filter(NotificationModel.token==self.token).\
                 one()
-            self.assertIsNotNone(notification_model.created)
-            self.assertEqual(len(self.recipients), len(notification_model.recipients))
-            self.assertEqual(self.recipients[0], notification_model.recipients[0].id)
-            self.assertEqual(self.subject, notification_model.subject)
-            self.assertEqual(self.plain_text, notification_model.plain_text)
-            self.assertEqual(self.html_text, notification_model.html_text)
+            self._validate_notification_model(notification_model, self.context, self.notification)
 
             # Verify NotificationJob model
             notification_job_model = self.db_session.query(NotificationJobModel).\
                 filter(NotificationJobModel.notification==notification_model).\
                 one()
-            self.assertEqual(self.recipients[0], notification_job_model.recipient_id)
-            self.assertEqual(
-                NOTIFICATION_PRIORITY_TYPE_IDS[NotificationPriority._VALUES_TO_NAMES[self.priority]],
-                notification_job_model.priority_id)
-            self.assertAlmostEqual(self.not_before, tz.utc_to_timestamp(notification_job_model.not_before), places=0) #round to nearest full second
-            self.assertIsNotNone(notification_job_model.created)
-            self.assertIsNone(notification_job_model.start)
-            self.assertIsNone(notification_job_model.end)
-            self.assertIsNone(notification_job_model.owner)
-            self.assertIsNone(notification_job_model.successful)
-            self.assertEqual(self.max_retry_attempts, notification_job_model.retries_remaining)
+            self._validate_notificationjob_model(
+                notification_job_model,
+                self.notification,
+                self.recipients[0],
+                self.max_retry_attempts
+            )
 
         finally:
             if notification_model is not None:
@@ -214,10 +246,40 @@ class NotificationTest(IntegrationTestCase):
 
 
     def test_notify_multiple_recipients(self):
-        """Testing notification with multiple recipients
+        """Testing notification with multiple recipients.
         """
-        # TODO
-        pass
+
+        try:
+            # Write Notification and NotificationJob to db
+            recipients_list = [1,2,3]
+            mult_recipient_notification = copy.deepcopy(self.notification)
+            mult_recipient_notification.recipientUserIds = recipients_list
+            self.service_proxy.notify(self.context, mult_recipient_notification)
+
+            # Verify Notification model
+            notification_model = self.db_session.query(NotificationModel).\
+                filter(NotificationModel.context==self.context).\
+                filter(NotificationModel.token==self.token).\
+                one()
+            self._validate_notification_model(notification_model, self.context, mult_recipient_notification)
+
+            # Verify NotificationJob model
+            notification_job_models = self.db_session.query(NotificationJobModel).\
+                filter(NotificationJobModel.notification==notification_model).\
+                order_by(NotificationJobModel.recipient_id).\
+                all()
+            for index, model in enumerate(notification_job_models):
+                self._validate_notificationjob_model(
+                    model,
+                    mult_recipient_notification,
+                    recipients_list[index],
+                    self.max_retry_attempts
+                )
+
+        finally:
+            if notification_model is not None:
+                self._cleanup(notification_model)
+
 
 
 if __name__ == '__main__':
