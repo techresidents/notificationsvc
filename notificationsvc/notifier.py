@@ -64,16 +64,25 @@ class Notifier(object):
                 # handled by this context manager. Here, we
                 # specify how to process the job.
 
-                # Call into email service wrapper
-                self.email_provider.send(
-                    [job.recipient.email],
-                    job.notification.subject,
-                    job.notification.plainText,
-                    job.notification.htmlText
-                )
+                # This is where the logic that controls which
+                # provider to use will live (e.g. email, sms, etc).
+                # For now, we only have an email provider so
+                # there's no control logic.
 
-                # return async object
-                # TODO
+                # Do any text substitution here
+                # subject = self.template_engine.substitute([], job.notification.subject)
+                # plain_text = self.template_engine.substitute([], job.notification.plainText)
+                # html_text = self.template_engine.substitute([], job.notification.htmlText)
+
+                # Call into email service wrapper
+                # TODO return async object
+                result = self.email_provider.send(
+                    job.recipient.email,
+                    job.notification.subject,
+                    job.notification.plain_text,
+                    job.notification.html_text
+                    #job.notification.attachments,
+                )
 
         except JobOwned:
             # This means that the NotificationJob was claimed just before
@@ -82,6 +91,8 @@ class Notifier(object):
             # has occurred.
             self.log.warning("Notification job with job_id=%d already claimed. Stopping processing." % job.id)
             pass
-        except Exception:
+        except Exception as e:
             #failure during processing.
-            self._create_new_job(job)
+            self.log.exception(e)
+            # TODO for certain exceptions, we do not want to create a new job
+            #self._create_new_job(job)

@@ -29,18 +29,20 @@ ZOOKEEPER_HOSTS = ["localdev:2181"]
 #Notification svc settings
 NOTIFIER_THREADS = 1
 NOTIFIER_POOL_SIZE = 1
-NOTIFIER_POLL_SECONDS = 60
+NOTIFIER_POLL_SECONDS = 10
 MAX_RETRY_ATTEMPTS = 3
 SECS_BETWEEN_RETRY_ATTEMPTS = 1000
 
 # Provider Factory settings
 EMAIL_PROVIDER_FACTORY = providers.factory.smtp_provider_factory
+EMAIL_PROVIDER_FROM_EMAIL = 'Tech Residents Support <support@techresidents.com>'
 
 # SMTP settings
-SMTP_USERNAME = 'techresidents'
-SMTP_PASSWORD = 'password'
-SMTP_SERVER = 'smtp.sendgrid.net'
-SMTP_PORT = 587
+SMTP_USERNAME = ''
+SMTP_PASSWORD = ''
+SMTP_HOST = 'localhost'
+SMTP_PORT = 25
+SMTP_USE_TLS = True
 
 
 

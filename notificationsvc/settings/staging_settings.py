@@ -34,12 +34,14 @@ SECS_BETWEEN_RETRY_ATTEMPTS = 1000
 
 # Provider Factory settings
 EMAIL_PROVIDER_FACTORY = providers.factory.smtp_provider_factory
+EMAIL_PROVIDER_FROM_EMAIL = 'Tech Residents Support <support@techresidents.com>'
 
 # SMTP settings
-SMTP_USERNAME = 'techresidents'
-SMTP_PASSWORD = 'password'
-SMTP_SERVER = 'smtp.sendgrid.net'
-SMTP_PORT = 587
+SMTP_USERNAME = ''
+SMTP_PASSWORD = ''
+SMTP_HOST = 'localhost'
+SMTP_PORT = 25
+SMTP_USE_TLS = True
 
 #Logging settings
 LOGGING = {

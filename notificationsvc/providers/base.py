@@ -34,6 +34,15 @@ class EmailProvider(NotificationProvider):
         """
         super(EmailProvider, self).__init__(name)
 
+    def send(self, recipients, subject, plain_text, html_text):
+        """Send email.
+        Args:
+            recipients:
+            subject:
+            plain_text,
+            html_text
+        """
+        return
 
 
 class SmsProvider(NotificationProvider):
