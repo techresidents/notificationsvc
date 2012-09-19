@@ -1,7 +1,6 @@
 
 import logging
 import smtplib
-import socket
 
 from cStringIO import StringIO
 from email.header import Header
@@ -51,7 +50,7 @@ class SmtpProvider(EmailProvider):
         self.password = password
         self.host = host
         self.port = port
-        self.use_tls = False #TODO set back to use_tls after testing
+        self.use_tls = use_tls
         self.from_email = from_email
         self.connection = None
 
