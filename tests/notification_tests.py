@@ -46,7 +46,7 @@ class NotificationTest(IntegrationTestCase):
         cls.context = 'testContext'
         cls.token = 'testToken'
         cls.recipients = [1] # list of user IDs
-        cls.subject = u'test smtp subject \uc389'
+        cls.subject = 'test smtp subject'
         cls.plain_text = 'test notification body'
         cls.html_text = '<html><body><p>test notification body</p></body</html>'
         cls.notification = Notification(
@@ -54,14 +54,10 @@ class NotificationTest(IntegrationTestCase):
             token=cls.token,
             priority=cls.priority,
             recipientUserIds=cls.recipients,
-            subject=cls.subject.encode('utf-8'),
+            subject=cls.subject,
             plainText=cls.plain_text,
             htmlText=cls.html_text
         )
-        print 'Testing here #########################'
-        print cls.notification.subject
-        print type(cls.notification.subject)
-        print '#####################################'
 
 
     @classmethod
@@ -146,7 +142,7 @@ class NotificationTest(IntegrationTestCase):
             NOTIFICATION_PRIORITY_VALUES[NotificationPriority._VALUES_TO_NAMES[notification.priority]],
             model.priority)
         self.assertEqual(expected_context, model.context)
-        #self.assertEqual(notification.subject, model.subject) TODO uncomment
+        self.assertEqual(notification.subject, model.subject)
         self.assertEqual(notification.plainText, model.plain_text)
         self.assertEqual(notification.htmlText, model.html_text)
         self.assertEqual(len(notification.recipientUserIds), len(model.recipients))
@@ -211,10 +207,14 @@ class NotificationTest(IntegrationTestCase):
 
     def test_notify_tokenGeneration(self):
         try:
+            # Init to None to avoid unnecessary cleanup on failure
+            updated_notification = None
+
             no_token_notification = copy.deepcopy(self.notification)
             no_token_notification.token = None
             updated_notification = self.service_proxy.notify(self.context, no_token_notification)
             self.assertIsNotNone(updated_notification.token)
+
         finally:
             if updated_notification is not None:
                 self._cleanup(self._get_notification_model(self.context, updated_notification))
@@ -227,6 +227,7 @@ class NotificationTest(IntegrationTestCase):
         """
 
         try:
+            # Init model to None to avoid unnecessary cleanup on failure
             notification_model = None
 
             # Create & write Notification and NotificationJob to db
@@ -263,6 +264,9 @@ class NotificationTest(IntegrationTestCase):
         """
 
         try:
+            # Init model to None to avoid unnecessary cleanup on failure
+            notification_model = None
+
             # Write Notification and NotificationJob to db
             recipients_list = [1,2,3]
             mult_recipient_notification = copy.deepcopy(self.notification)

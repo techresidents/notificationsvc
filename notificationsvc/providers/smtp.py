@@ -44,6 +44,7 @@ class SmtpProvider(EmailProvider):
             server:
             port:
             from_email:
+            use_tls:
         """
         super(SmtpProvider, self).__init__('SmtpEmailProvider')
         self.username = username
@@ -123,17 +124,13 @@ class SmtpProvider(EmailProvider):
     def _close(self):
         """ Close connection to server
         """
-        if self.connection:
-
-            try:
+        try:
+            if self.connection:
                 self.connection.quit()
-            except socket.sslerror as e:
-                # This happens when calling quit()
-                # on a TLS connection sometimes.
-                logging.exception(e)
-                self.connection.close()
+        except Exception as e:
+            logging.exception(e)
 
-            self.connection = None
+        self.connection = None
 
 
     def _validate_send_params(self, recipient, subject, plain_text, html_text):
@@ -181,9 +178,11 @@ class SmtpProvider(EmailProvider):
                 msg
             )
 
+        except InvalidParameterException as e:
+            raise e
         except Exception as e:
             logging.exception(e)
-            # raise e
+            raise e
 
         finally:
             self._close()
