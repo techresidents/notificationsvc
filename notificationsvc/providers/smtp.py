@@ -38,19 +38,19 @@ class SmtpProvider(EmailProvider):
         """SmtpProvider constructor.
 
         Args:
-            username:
-            password:
-            server:
-            port:
-            from_email:
-            use_tls:
+            username: SMTP server username
+            password: SMTP server password
+            host: SMTP host such as smtp.x.com
+            port: SMTP port
+            from_email: sender's email address
+            use_tls: boolean to indicate to use TLS
         """
         super(SmtpProvider, self).__init__('SmtpEmailProvider')
         self.username = username
         self.password = password
         self.host = host
         self.port = port
-        self.use_tls = False # TODO change back to _use_tls after testing
+        self.use_tls = use_tls
         self.from_email = from_email
         self.connection = None
 
@@ -60,11 +60,11 @@ class SmtpProvider(EmailProvider):
 
         Args:
             recipient_email: recipient's email address
-            subject:
-            plain_text:
-            html_text:
+            subject: email subject
+            plain_text: email plain text body
+            html_text: email html text body
         Returns:
-            Returns a flattened MIMEMultipart object. This output can be
+            Returns a flattened MIME object. This output can be
             used directly with smtplib.
         """
 
@@ -81,11 +81,12 @@ class SmtpProvider(EmailProvider):
             msg.attach(plain_part)
             msg.attach(html_part)
 
-        elif plain_text:
-            msg = MIMEText(plain_text, 'plain', SmtpProvider.UTF8)
-            msg.set_charset(SmtpProvider.UTF8)
         elif html_text:
             msg = MIMEText(html_text, 'html', SmtpProvider.UTF8)
+            msg.set_charset(SmtpProvider.UTF8)
+
+        elif plain_text:
+            msg = MIMEText(plain_text, 'plain', SmtpProvider.UTF8)
             msg.set_charset(SmtpProvider.UTF8)
 
 
@@ -147,7 +148,8 @@ class SmtpProvider(EmailProvider):
             plain_text: email plain text
             html_text: email html text
         Raises:
-            InvalidParameterException
+            InvalidParameterException if any
+            of the args are invalid
         """
         if not recipient:
             raise InvalidParameterException
@@ -171,9 +173,6 @@ class SmtpProvider(EmailProvider):
 
         """
         try:
-            print '****************'
-            print 'sending email'
-            print '****************'
             self._validate_send_params(recipient, subject, plain_text, html_text)
             msg = self._build_message(recipient, subject, plain_text, html_text)
             self._open()
