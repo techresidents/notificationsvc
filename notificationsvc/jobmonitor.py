@@ -20,8 +20,6 @@ class NotificationThreadPool(ThreadPool):
 
         Arguments:
             num_threads: number of worker threads
-            db_session_factory: callable returning new sqlalchemy
-                db session.
             notifier_pool: pool of Notifier objects responsible for
                 sending notifications
         """

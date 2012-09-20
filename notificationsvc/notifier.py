@@ -4,23 +4,21 @@ import logging
 
 from sqlalchemy.sql import func
 
-from trnotificationsvc.gen.ttypes import NotificationPriority, Notification
 from trpycore.timezone import tz
 from trsvcscore.db.models import NotificationJob
 from trsvcscore.db.job import DatabaseJob, DatabaseJobQueue, JobOwned, QueueEmpty, QueueStopped
 
 from providers.exceptions import InvalidParameterException
 
-#TODO delete exception.py if not needed anymore
 
 
 class Notifier(object):
     """ Responsible for sending notifications.
 
     Args:
-        db_session_factory:
-        email_provider:
-        job_retry_seconds:
+        db_session_factory: callable returning a new sqlalchemy db session
+        email_provider: concrete EmailProvider object
+        job_retry_seconds: number of seconds delay between job retries
     """
 
     def __init__(
@@ -86,7 +84,7 @@ class Notifier(object):
                 # For now, we only have an email provider so
                 # there's no control logic.
 
-                # Do any text substitution here
+                # TODO Do any text substitution here
                 # subject = self.template_engine.substitute([], job.notification.subject)
                 # plain_text = self.template_engine.substitute([], job.notification.plainText)
                 # html_text = self.template_engine.substitute([], job.notification.htmlText)
@@ -109,8 +107,10 @@ class Notifier(object):
             self.log.warning("Notification job with job_id=%d already claimed. Stopping processing." % job.id)
             pass
         except InvalidParameterException as e:
+            # TODO this would result in a job failing and never being retried,
+            # which could be hard to find later in our db. Just let it retry
+            # max times?
             self.log.exception(e)
-            self._retry_job(job)
         except Exception as e:
             #failure during processing.
             self.log.exception(e)
