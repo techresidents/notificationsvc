@@ -23,8 +23,8 @@ class NotificationTestDataSet(object):
             token='singleRecipient-plainTextMsg',
             priority=NotificationPriority.DEFAULT_PRIORITY,
             recipients=[1],
-            subject='test subject',
-            plain_text='test plain text message body',
+            subject='test plain text subject',
+            plain_text='test message body',
             html_text=''
         )
         self.notifications_list.append(n0)
@@ -36,7 +36,7 @@ class NotificationTestDataSet(object):
             token='singleRecipient-htmlTextMsg',
             priority=NotificationPriority.DEFAULT_PRIORITY,
             recipients=[1],
-            subject='test subject',
+            subject='test html text subject',
             plain_text='',
             html_text='<html><body><p>test notification body</p></body</html>'
         )
@@ -49,8 +49,8 @@ class NotificationTestDataSet(object):
             token='singleRecipient-plainTextAndHtmlTextMsg',
             priority=NotificationPriority.DEFAULT_PRIORITY,
             recipients=[1],
-            subject='test subject',
-            plain_text='test plain text message body',
+            subject='test multipart subject',
+            plain_text='test message body',
             html_text='<html><body><p>test notification body</p></body</html>'
         )
         self.notifications_list.append(n2)
@@ -64,13 +64,38 @@ class NotificationTestDataSet(object):
             token='singleRecipient-plainTextMsg',
             priority=NotificationPriority.DEFAULT_PRIORITY,
             recipients=[1,2,3],
-            subject='test subject',
-            plain_text='test plain text message body',
+            subject='test plain text subject',
+            plain_text='test message body',
             html_text=''
         )
         self.notifications_list.append(n3)
         self.multiple_recipients_list.append(n3)
 
+        # Multiple recipient, html-text msg
+        n4 = NotificationTestData(
+            not_before=tz.timestamp(),
+            token='singleRecipient-htmlTextMsg',
+            priority=NotificationPriority.DEFAULT_PRIORITY,
+            recipients=[1, 2],
+            subject='test html text subject',
+            plain_text='',
+            html_text='<html><body><p>test notification body</p></body</html>'
+        )
+        self.notifications_list.append(n4)
+        self.multiple_recipients_list.append(n4)
+
+        # Multiple recipient, plain-text and html-text msg
+        n5 = NotificationTestData(
+            not_before=tz.timestamp(),
+            token='singleRecipient-plainTextAndHtmlTextMsg',
+            priority=NotificationPriority.DEFAULT_PRIORITY,
+            recipients=[3, 4, 5],
+            subject='test multipart ubject',
+            plain_text='test message body',
+            html_text='<html><body><p>test notification body</p></body</html>'
+        )
+        self.notifications_list.append(n5)
+        self.multiple_recipients_list.append(n5)
 
 
 

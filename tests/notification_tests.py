@@ -28,6 +28,19 @@ import settings
 class NotificationTest(IntegrationTestCase):
     """
         Test the Notification Service interface.
+
+        These tests will attempt to send notifications
+        according to the settings, which may result in
+        real emails or other notifications being disseminated.
+
+        It is recommended to change these settings to point
+        to your test environment. For example, setting the
+        email provider settings to be your localhost.
+
+        Note that you can use python as a Debug SMTP server via the following
+        command:
+            >>> sudo python -m smtpd -n -c DebuggingServer localhost:25
+
     """
 
     @classmethod
@@ -259,8 +272,8 @@ class NotificationTest(IntegrationTestCase):
                 # Add model to list for cleanup
                 if notification_models is None:
                     notification_models = []
-                else:
-                    notification_models.append(notification_model)
+
+                notification_models.append(notification_model)
 
 
             # Allow processing of job to take place
@@ -309,8 +322,8 @@ class NotificationTest(IntegrationTestCase):
                 # Add model to list for cleanup
                 if notification_models is None:
                     notification_models = []
-                else:
-                    notification_models.append(notification_model)
+
+                notification_models.append(notification_model)
 
 
             # Allow processing of job to take place
