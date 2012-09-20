@@ -65,7 +65,6 @@ class NotificationJobMonitor(object):
         """
         self.log = logging.getLogger(__name__)
         self.thread_pool = thread_pool
-        self.poll_seconds = poll_seconds
 
         self.db_job_queue = DatabaseJobQueue(
             owner='notificationsvc',

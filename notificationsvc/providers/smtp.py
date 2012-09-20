@@ -50,7 +50,7 @@ class SmtpProvider(EmailProvider):
         self.password = password
         self.host = host
         self.port = port
-        self.use_tls = use_tls
+        self.use_tls = False # TODO change back to _use_tls after testing
         self.from_email = from_email
         self.connection = None
 
@@ -68,9 +68,25 @@ class SmtpProvider(EmailProvider):
             used directly with smtplib.
         """
 
-        # Create multipart message container - the correct MIME type is multipart/alternative.
-        msg = MIMEMultipart('alternative')
-        msg.set_charset(SmtpProvider.UTF8)
+        if plain_text and html_text:
+            # Create multipart message container - the correct MIME type is multipart/alternative.
+            msg = MIMEMultipart('alternative')
+            msg.set_charset(SmtpProvider.UTF8) # this has to be set before anything else is done
+            plain_part = MIMEText(plain_text, 'plain', SmtpProvider.UTF8)
+            html_part = MIMEText(html_text, 'html', SmtpProvider.UTF8)
+
+            # Attach parts into message container.
+            # According to RFC 2046, the last part of a multipart message,
+            # is best and preferred.
+            msg.attach(plain_part)
+            msg.attach(html_part)
+
+        elif plain_text:
+            msg = MIMEText(plain_text, 'plain', SmtpProvider.UTF8)
+            msg.set_charset(SmtpProvider.UTF8)
+        elif html_text:
+            msg = MIMEText(html_text, 'html', SmtpProvider.UTF8)
+            msg.set_charset(SmtpProvider.UTF8)
 
 
         msg['Subject'] = Header(subject, SmtpProvider.UTF8)
@@ -80,16 +96,6 @@ class SmtpProvider(EmailProvider):
         # a Header object, as the subject is doing.
         msg['From'] = self.from_email
         msg['To'] = recipient_email
-
-        # Record the MIME types of both parts - text/plain and text/html.
-        plain_part = MIMEText(plain_text, 'plain', SmtpProvider.UTF8)
-        html_part = MIMEText(html_text, 'html', SmtpProvider.UTF8)
-
-        # Attach parts into message container.
-        # According to RFC 2046, the last part of a multipart message,
-        # is best and preferred.
-        msg.attach(plain_part)
-        msg.attach(html_part)
 
         # Instantiate a Generator object to flatten the multipart
         # object to a string. Using multipart.as_string() escapes
