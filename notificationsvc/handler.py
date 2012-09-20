@@ -44,8 +44,9 @@ class NotificationServiceHandler(TNotificationService.Iface, ServiceHandler):
         # actual work of sending notifications
         def notifier_factory():
             return Notifier(
-                self.get_database_session(),
-                settings.EMAIL_PROVIDER_FACTORY()
+                db_session_factory=self.get_database_session,
+                email_provider=settings.EMAIL_PROVIDER_FACTORY(),
+                job_retry_seconds=settings.NOTIFIER_JOB_RETRY_SECONDS
             )
         self.notifier_pool = QueuePool(
             size=settings.NOTIFIER_POOL_SIZE,
@@ -54,7 +55,6 @@ class NotificationServiceHandler(TNotificationService.Iface, ServiceHandler):
         # Create pool of threads to manage the work
         self.thread_pool = NotificationThreadPool(
             num_threads=settings.NOTIFIER_THREADS,
-            db_session_factory=self.get_database_session(),
             notifier_pool=self.notifier_pool)
 
         # Create job monitor which scans for new jobs
@@ -184,7 +184,7 @@ class NotificationServiceHandler(TNotificationService.Iface, ServiceHandler):
                     recipient_id=user_id,
                     priority=NOTIFICATION_PRIORITY_VALUES[
                              NotificationPriority._VALUES_TO_NAMES[notification.priority]],
-                    retries_remaining=settings.MAX_RETRY_ATTEMPTS
+                    retries_remaining=settings.NOTIFIER_JOB_MAX_RETRY_ATTEMPTS
                 )
                 db_session.add(job)
 

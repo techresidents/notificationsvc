@@ -1,5 +1,5 @@
 
-import copy
+import datetime
 import logging
 
 from sqlalchemy.sql import func
@@ -9,20 +9,32 @@ from trpycore.timezone import tz
 from trsvcscore.db.models import NotificationJob
 from trsvcscore.db.job import DatabaseJob, DatabaseJobQueue, JobOwned, QueueEmpty, QueueStopped
 
+from providers.exceptions import InvalidParameterException
 
 #TODO delete exception.py if not needed anymore
 
 
 class Notifier(object):
     """ Responsible for sending notifications.
+
+    Args:
+        db_session_factory:
+        email_provider:
+        job_retry_seconds:
     """
 
-    def __init__(self, db_session_factory, email_provider):
+    def __init__(
+            self,
+            db_session_factory,
+            email_provider,
+            job_retry_seconds
+    ):
         self.log = logging.getLogger(__name__)
         self.db_session_factory = db_session_factory
         self.email_provider = email_provider
+        self.job_retry_seconds = job_retry_seconds
 
-    def _create_new_job(self, failed_job):
+    def _retry_job(self, failed_job):
         """Create a new NotificationJob from a failed job.
 
         This method creates a new Notification Job from a
@@ -30,16 +42,28 @@ class Notifier(object):
         is added to the db.
         """
         try:
+            db_session = None
+
             #create new job in db to retry.
             if failed_job.retries_remaining > 0:
-                new_job = copy.deepcopy(failed_job)
-                new_job.created = func.current_timestamp()
-                new_job.retries_remaining = failed_job.retries_remaining-1
-
+                not_before = tz.utcnow() + datetime.timedelta(seconds=self.job_retry_seconds)
+                new_job = NotificationJob(
+                    created=func.current_timestamp(),
+                    not_before=not_before,
+                    notification_id=failed_job.notification_id,
+                    recipient_id=failed_job.recipient_id,
+                    priority=failed_job.priority,
+                    retries_remaining=failed_job.retries_remaining-1
+                )
                 # Add job to db
-                db_session = self.create_db_session()
+                db_session = self.db_session_factory()
                 db_session.add(new_job)
                 db_session.commit()
+            else:
+                self.log.info("No retries remaining for job for notification_job_id=%s"\
+                              % (failed_job.id))
+                self.log.error("Job for notification_job_id=%s failed!"\
+                               % (failed_job.id))
         except Exception as e:
             self.log.exception(e)
             if db_session:
@@ -48,13 +72,6 @@ class Notifier(object):
             if db_session:
                 db_session.close()
 
-    def _create_db_session(self):
-        """Create  new sqlalchemy db session.
-
-        Returns:
-            sqlalchemy db session
-        """
-        return self.db_session_factory()
 
     def send(self, database_job):
         try:
@@ -77,10 +94,10 @@ class Notifier(object):
                 # Call into email service wrapper
                 # TODO return async object
                 result = self.email_provider.send(
-                    job.recipient.email,
-                    job.notification.subject,
-                    job.notification.plain_text,
-                    job.notification.html_text
+                    recipient=job.recipient.email,
+                    subject=job.notification.subject,
+                    plain_text=job.notification.plain_text,
+                    html_text=job.notification.html_text
                     #job.notification.attachments,
                 )
 
@@ -91,8 +108,10 @@ class Notifier(object):
             # has occurred.
             self.log.warning("Notification job with job_id=%d already claimed. Stopping processing." % job.id)
             pass
+        except InvalidParameterException as e:
+            self.log.exception(e)
+            self._retry_job(job)
         except Exception as e:
             #failure during processing.
             self.log.exception(e)
-            # TODO for certain exceptions, we do not want to create a new job
-            #self._create_new_job(job)
+            self._retry_job(job)

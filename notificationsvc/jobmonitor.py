@@ -15,7 +15,7 @@ class NotificationThreadPool(ThreadPool):
     Given a work item (job_id), this class will process the
     job and delegate the work to send a notification.
     """
-    def __init__(self, num_threads, db_session_factory, notifier_pool):
+    def __init__(self, num_threads, notifier_pool):
         """Constructor.
 
         Arguments:
@@ -27,7 +27,6 @@ class NotificationThreadPool(ThreadPool):
         """
         super(NotificationThreadPool, self).__init__(num_threads)
         self.log = logging.getLogger(__name__)
-        self.db_session_factory = db_session_factory
         self.notifier_pool = notifier_pool
 
 

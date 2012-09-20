@@ -60,7 +60,7 @@ class NotificationTest(IntegrationTestCase):
 
         # Test NotificationJob data
         cls.context = 'testContext'
-        cls.max_retry_attempts = settings.MAX_RETRY_ATTEMPTS
+        cls.max_retry_attempts = settings.NOTIFIER_JOB_MAX_RETRY_ATTEMPTS
 
 
     @classmethod
@@ -275,10 +275,8 @@ class NotificationTest(IntegrationTestCase):
 
                 notification_models.append(notification_model)
 
-
-            # Allow processing of job to take place
-            time.sleep(30)
-
+            # Allow processing of jobs to take place
+            time.sleep(settings.NOTIFIER_POLL_SECONDS+30)
 
         finally:
             if notification_models is not None:
@@ -325,10 +323,8 @@ class NotificationTest(IntegrationTestCase):
 
                 notification_models.append(notification_model)
 
-
             # Allow processing of job to take place
-            time.sleep(30)
-
+            time.sleep(settings.NOTIFIER_POLL_SECONDS+30)
 
         finally:
             if notification_models is not None:
