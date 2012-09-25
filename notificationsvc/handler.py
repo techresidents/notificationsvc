@@ -24,9 +24,7 @@ from notifier import Notifier
 class NotificationServiceHandler(TNotificationService.Iface, ServiceHandler):
     """NotificationServiceHandler manages the notification service.
 
-    NotificationServiceHandler specifies the service
-    interface.
-
+    This class specifies the service interface.
     It is also responsible for managing the service
     functionality including service start, stop,
     and join.
@@ -131,6 +129,7 @@ class NotificationServiceHandler(TNotificationService.Iface, ServiceHandler):
             context: String to identify calling context
             notification: Notification object.
         Returns:
+            Thrift Notification object.
             If no 'token' attribute was provided in the input
             notification object, the returned object will
             specify one.

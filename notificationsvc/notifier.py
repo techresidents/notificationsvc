@@ -17,7 +17,7 @@ class Notifier(object):
 
     Args:
         db_session_factory: callable returning a new sqlalchemy db session
-        email_provider: concrete EmailProvider object
+        email_provider: Concrete object derived from EmailProvider
         job_retry_seconds: number of seconds delay between job retries
     """
 
@@ -36,8 +36,7 @@ class Notifier(object):
         """Create a new NotificationJob from a failed job.
 
         This method creates a new Notification Job from a
-        job that failed to process successfully. The job
-        is added to the db.
+        job that failed to process successfully.
         """
         try:
             db_session = None
@@ -72,17 +71,24 @@ class Notifier(object):
 
 
     def send(self, database_job):
+        """ Send the notification specified by the input job.
+
+        Args:
+            database_job: DatabaseJob object, or objected derived from DatabaseJob
+        """
         try:
             with database_job as job:
 
                 # Claiming the job and finishing the job are
                 # handled by this context manager. Here, we
-                # specify how to process the job.
+                # specify how to process the job. The context
+                # manager returns 'job' as a NotificationJob
+                # db model object.
 
                 # This is where the logic that controls which
                 # provider to use will live (e.g. email, sms, etc).
                 # For now, we only have an email provider so
-                # there's no control logic.
+                # there's no logic needed.
 
                 # TODO Do any text substitution here
                 # subject = self.template_engine.substitute([], job.notification.subject)

@@ -4,6 +4,12 @@ from providers.smtp import SmtpProvider
 
 
 def smtp_provider_factory():
+    """Returns an SMTP Provider object.
+
+    This factory returns an SMTP Provider
+    whose attributes are derived from
+    the notification settings.
+    """
     return SmtpProvider(
         username=settings.SMTP_USERNAME,
         password=settings.SMTP_PASSWORD,
@@ -15,13 +21,16 @@ def smtp_provider_factory():
 
 
 def send_grid_smtp_provider_factory():
-    # return SendGridSmtpProvider(
-    #   username=settings.SEND_GRID_USERNAME,
-    #   password=settings.SEND_GRID_PASSWORD,
-    #   server=settings.SEND_GRID_SERVER,
-    #   port=settings.SEND_GRID_PORT,
-    #   custom_headers=SEND_GRID_CUSTOM_HEADERS,
-    #   filter_settings=SEND_GRID_FILTERS,
-    #   unique_arguments=SEND_GRID_UNIQUE_ARGS,
-    #)
+    """ TODO in the future, if needed.
+
+    return SendGridSmtpProvider(
+       username=settings.SEND_GRID_USERNAME,
+       password=settings.SEND_GRID_PASSWORD,
+       server=settings.SEND_GRID_SERVER,
+       port=settings.SEND_GRID_PORT,
+       custom_headers=SEND_GRID_CUSTOM_HEADERS,
+       filter_settings=SEND_GRID_FILTERS,
+       unique_arguments=SEND_GRID_UNIQUE_ARGS,
+    )
+    """
     pass

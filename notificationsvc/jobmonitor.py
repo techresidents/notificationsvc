@@ -12,7 +12,7 @@ from trsvcscore.db.job import DatabaseJob, DatabaseJobQueue, JobOwned, QueueEmpt
 class NotificationThreadPool(ThreadPool):
     """Thread pool used to process notifications.
 
-    Given a work item (job_id), this class will process the
+    Given a work item (job), this class will process the
     job and delegate the work to send a notification.
     """
     def __init__(self, num_threads, notifier_pool):
@@ -47,9 +47,10 @@ class NotificationThreadPool(ThreadPool):
 
 
 class NotificationJobMonitor(object):
-    """
-    NotificationJobMonitor monitors for new notification jobs, and delegates
-     work items to a thread pool.
+    """Notification Job monitor
+
+    This class monitors for new notification jobs,
+    and delegates work items to a thread pool.
     """
     def __init__(self, db_session_factory, thread_pool, poll_seconds=60):
         """Constructor.
@@ -88,7 +89,8 @@ class NotificationJobMonitor(object):
             try:
                 self.log.info("NotificationJobMonitor is checking for new jobs to process...")
 
-                # delegate jobs to threadpool for processing
+                # Grab jobs as they arrive and delegate
+                # jobs to threadpool for processing
                 job = self.db_job_queue.get()
                 self.thread_pool.put(job)
 
