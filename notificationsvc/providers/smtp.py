@@ -14,12 +14,17 @@ from exceptions import InvalidParameterException
 
 
 class SmtpProvider(EmailProvider):
-    """SmtpProvider implements the EmailProvider base class.
+    """SmtpProvider implements the EmailProvider
+    abstract base class.
 
     This EmailProvider class is responsible for establishing
     and maintaining a connection to a SMTP server.
 
-    It is responsible for any throttling that needs to occur.
+    Throttling is performed by the specified SMTP server.
+
+    At present, this class opens and closes a connection
+    to the SMTP host for each message sent.  In the future,
+    this may have to change.
     """
 
     # Hard code UTF-8 in one place
@@ -40,7 +45,7 @@ class SmtpProvider(EmailProvider):
         Args:
             username: SMTP server username
             password: SMTP server password
-            host: SMTP host such as smtp.x.com
+            host: SMTP host
             port: SMTP port
             from_email: sender's email address
             use_tls: boolean to indicate to use TLS
