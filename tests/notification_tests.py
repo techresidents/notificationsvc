@@ -40,6 +40,7 @@ class NotificationTest(IntegrationTestCase):
         Note that you can use python as a Debug SMTP server via the following
         command:
             >>> sudo python -m smtpd -n -c DebuggingServer localhost:25
+            **Also note that this debug server does not support TLS.**
 
     """
 
@@ -238,13 +239,16 @@ class NotificationTest(IntegrationTestCase):
             # Init to None to avoid unnecessary cleanup on failure
             updated_notification = None
 
-            # Get a test notification object
-            notification_test_data = self.test_notifications_list[0]
-            notification = notification_test_data.notification
+            # Create a test notification object
+            no_token_notification = Notification(
+                token=None,
+                priority=NotificationPriority.DEFAULT_PRIORITY,
+                recipientUserIds=[1],
+                subject='test token generation',
+                plainText='plain text body',
+                htmlText=''
+            )
 
-            # Copy object before modification
-            no_token_notification = copy.deepcopy(notification)
-            no_token_notification.token = None
             updated_notification = self.service_proxy.notify(self.context, no_token_notification)
             self.assertIsNotNone(updated_notification.token)
 
