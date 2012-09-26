@@ -1,14 +1,14 @@
 
 import datetime
 import logging
+from string import Template
 
 from sqlalchemy.sql import func
 
 from trpycore.timezone import tz
 from trsvcscore.db.models import NotificationJob
-from trsvcscore.db.job import DatabaseJob, DatabaseJobQueue, JobOwned, QueueEmpty, QueueStopped
+from trsvcscore.db.job import JobOwned
 
-from providers.exceptions import InvalidParameterException
 
 
 
@@ -70,6 +70,26 @@ class Notifier(object):
                 db_session.close()
 
 
+    def _substitute(self, templatized_string, template_dict):
+        """Substitute dynamic values for placeholder text.
+
+        The template.substitute() method can raise a ValuesError
+        exception if no value exists in the provided template_dict
+        for the template string. The notification service interface
+        (the notify method) currently validates the template
+        strings before continuing processing, so this should
+        never raise an exception from here.
+
+        Args:
+            templatized_string: template String. Uses string.Template
+            template_dict: template values
+        Returns:
+            String with substituted values
+        """
+        template = Template(templatized_string)
+        return template.substitute(template_dict)
+
+
     def send(self, database_job):
         """ Send the notification specified by the input job.
 
@@ -90,19 +110,22 @@ class Notifier(object):
                 # For now, we only have an email provider so
                 # there's no logic needed.
 
-                # TODO Do any text substitution here
-                # subject = self.template_engine.substitute([], job.notification.subject)
-                # plain_text = self.template_engine.substitute([], job.notification.plainText)
-                # html_text = self.template_engine.substitute([], job.notification.htmlText)
+                # Fill in template values, if provided
+                template_dict = {
+                    'first_name': job.recipient.first_name,
+                    'last_name': job.recipient.last_name}
+                subject = self._substitute(job.notification.subject, template_dict)
+                plain_text = self._substitute(job.notification.plain_text, template_dict)
+                html_text = self._substitute(job.notification.html_text, template_dict)
 
                 # Call into email service wrapper
                 # TODO return async object
                 result = self.email_provider.send(
                     recipient=job.recipient.email,
-                    subject=job.notification.subject,
-                    plain_text=job.notification.plain_text,
-                    html_text=job.notification.html_text
-                    #job.notification.attachments,
+                    subject=subject,
+                    plain_text=plain_text,
+                    html_text=html_text
+                    #job.notification.attachments in future
                 )
 
         except JobOwned:
@@ -111,12 +134,6 @@ class Notifier(object):
             # no need to abort the job since no processing of the job
             # has occurred.
             self.log.warning("Notification job with job_id=%d already claimed. Stopping processing." % job.id)
-            pass
-        except InvalidParameterException as e:
-            # TODO this would result in a job failing and never being retried,
-            # which could be hard to find later in our db. Just let it retry
-            # max times?
-            self.log.exception(e)
         except Exception as e:
             #failure during processing.
             self.log.exception(e)

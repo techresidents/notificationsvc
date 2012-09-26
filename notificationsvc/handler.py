@@ -1,4 +1,5 @@
 import logging
+from string import Template
 import uuid
 
 from sqlalchemy.sql import func
@@ -81,6 +82,43 @@ class NotificationServiceHandler(TNotificationService.Iface, ServiceHandler):
         join([self.thread_pool, self.job_monitor, super(NotificationServiceHandler, self)], timeout)
 
 
+    def _validate_template_strings(self, notification):
+        """Validate template values that may exist in the notification.
+
+        Currently, these template strings are supported:
+            'first_name': represents user's first name
+            'last_name' : represents user's last name
+
+        Args:
+            notification: Thrift Notification object
+        Raises:
+            InvalidNotificationException if template
+            strings are invalid.
+        """
+        try:
+            # Placeholder dict of values
+            names_dict = {
+                'first_name' : 'placeholderFirstName',
+                'last_name' : 'placeholderLastName'
+            }
+
+            template_strings = [
+                notification.subject,
+                notification.plainText,
+                notification.htmlText
+            ]
+
+            # If an invalid template strings exists,
+            # substitute() will throw an exception.
+            for string in template_strings:
+                template = Template(string)
+                template.substitute(names_dict)
+
+        except Exception:
+            raise InvalidNotificationException('Invalid use of string Templates. '
+                                               'Only "first_name" and "last_name" placeholders are supported.')
+
+
     def _validate_notify_params(self, db_session, users, context, notification):
         """Validate input params of the notify() method
 
@@ -102,6 +140,9 @@ class NotificationServiceHandler(TNotificationService.Iface, ServiceHandler):
         if (not notification.htmlText) and (not notification.plainText):
             raise InvalidNotificationException('Invalid body')
 
+        # Validate template strings in subject & body text, if any
+        self._validate_template_strings(notification)
+
         if notification.recipientUserIds is None or\
             len(notification.recipientUserIds) <= 0:
             raise InvalidNotificationException('Invalid recipients')
@@ -113,7 +154,6 @@ class NotificationServiceHandler(TNotificationService.Iface, ServiceHandler):
                 users.append(user)
         except Exception as e:
             raise InvalidNotificationException('Invalid user')
-
 
 
     def notify(self, context, notification):
@@ -128,6 +168,19 @@ class NotificationServiceHandler(TNotificationService.Iface, ServiceHandler):
         Args:
             context: String to identify calling context
             notification: Notification object.
+
+                The notification text fields (subject,
+                plainText, htmlText) support python
+                template strings (via string.Template).
+
+                Note that all '$' chars will have to be
+                properly escaped.
+
+                The following template strings are supported:
+                    'first_name' : the recipient's first name
+                    'last_name' : the recipient's last name
+                For example:
+                    'Dear ${first_name}',
         Returns:
             Thrift Notification object.
             If no 'token' attribute was provided in the input
@@ -145,6 +198,7 @@ class NotificationServiceHandler(TNotificationService.Iface, ServiceHandler):
             db_session = self.get_database_session()
 
             # Validate inputs
+            # During validation of recipients, populate a list of Users.
             users = []
             self._validate_notify_params(db_session, users, context, notification)
 

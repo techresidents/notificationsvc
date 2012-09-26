@@ -71,7 +71,7 @@ class NotificationJobMonitor(object):
             poll_seconds=poll_seconds,
         )
 
-        self.monitor_thread = threading.Thread(target=self.run)
+        self.monitor_thread = None
         self.running = False
 
 
@@ -80,6 +80,7 @@ class NotificationJobMonitor(object):
         if not self.running:
             self.running = True
             self.db_job_queue.start()
+            self.monitor_thread = threading.Thread(target=self.run)
             self.monitor_thread.start()
 
 
@@ -95,14 +96,12 @@ class NotificationJobMonitor(object):
                 self.thread_pool.put(job)
 
             except QueueEmpty:
-                #TODO what to do here?
                 pass
             except QueueStopped:
                 break
             except Exception as error:
                 self.log.exception(error)
 
-        # TODO what to do when we break?
         self.running = False
 
 

@@ -214,6 +214,24 @@ class NotificationTest(IntegrationTestCase):
         with self.assertRaises(InvalidNotificationException):
             self.service_proxy.notify(self.context, invalid_notification)
 
+        # Invalid notification template strings - subject
+        invalid_notification = copy.deepcopy(notification)
+        invalid_notification.subject = 'Dear ${invalid_placeholder}'
+        with self.assertRaises(InvalidNotificationException):
+            self.service_proxy.notify(self.context, invalid_notification)
+
+        # Invalid notification template strings - plainText
+        invalid_notification = copy.deepcopy(notification)
+        invalid_notification.plainText = 'Dear ${invalid_placeholder}'
+        with self.assertRaises(InvalidNotificationException):
+            self.service_proxy.notify(self.context, invalid_notification)
+
+        # Invalid notification template strings - htmlText
+        invalid_notification = copy.deepcopy(notification)
+        invalid_notification.htmlText = '<html><body><p>Dear ${invalid_placeholder}, test notification body</p></body</html>'
+        with self.assertRaises(InvalidNotificationException):
+            self.service_proxy.notify(self.context, invalid_notification)
+
 
     def test_notify_tokenGeneration(self):
         try:

@@ -51,7 +51,8 @@ service TNotificationService extends core.TRService
         Send a notification.
         Args:
             context: string representing the request context
-            notification: notification object
+            notification: notification object with templatized strings
+            templateMap: template values map
         Returns:
             The notification object. If no token attribute is
             provided in the input notification object, the

@@ -39,10 +39,10 @@ EMAIL_PROVIDER_FACTORY = providers.factory.smtp_provider_factory
 EMAIL_PROVIDER_FROM_EMAIL = 'Tech Residents Support <support@techresidents.com>'
 
 # SMTP settings
-SMTP_USERNAME = ''
-SMTP_PASSWORD = ''
-SMTP_HOST = 'localhost'
-SMTP_PORT = 25
+SMTP_USERNAME = 'techresidents'
+SMTP_PASSWORD = '7H5xkuNc'
+SMTP_HOST = 'smtp.sendgrid.net'
+SMTP_PORT = 587
 SMTP_USE_TLS = True
 
 
