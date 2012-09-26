@@ -35,15 +35,15 @@ NOTIFIER_JOB_MAX_RETRY_ATTEMPTS = 3
 
 
 # Provider Factory settings
-EMAIL_PROVIDER_FACTORY = providers.factory.smtp_provider_factory
+EMAIL_PROVIDER_FACTORY = providers.factory.console_email_provider_factory
 EMAIL_PROVIDER_FROM_EMAIL = 'Tech Residents Support <support@techresidents.com>'
 
 # SMTP settings
-SMTP_USERNAME = 'techresidents'
-SMTP_PASSWORD = '7H5xkuNc'
-SMTP_HOST = 'smtp.sendgrid.net'
-SMTP_PORT = 587
-SMTP_USE_TLS = True
+SMTP_USERNAME = None
+SMTP_PASSWORD = None
+SMTP_HOST = 'localhost'
+SMTP_PORT = 25
+SMTP_USE_TLS = False
 
 
 

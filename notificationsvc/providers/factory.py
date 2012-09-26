@@ -1,5 +1,6 @@
 
 import settings
+from providers.console import ConsoleEmailProvider
 from providers.smtp import SmtpProvider
 
 
@@ -19,6 +20,16 @@ def smtp_provider_factory():
         use_tls=settings.SMTP_USE_TLS
     )
 
+def console_email_provider_factory():
+    """Returns a Console EmailProvider object.
+
+    This factory returns a Console EmailProvider
+    that prints all email msg data to the
+    console.
+    """
+    return ConsoleEmailProvider(
+        from_email=settings.EMAIL_PROVIDER_FROM_EMAIL,
+    )
 
 def send_grid_smtp_provider_factory():
     """ TODO in the future, if needed.

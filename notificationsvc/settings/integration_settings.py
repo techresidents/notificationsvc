@@ -37,8 +37,8 @@ EMAIL_PROVIDER_FACTORY = providers.factory.smtp_provider_factory
 EMAIL_PROVIDER_FROM_EMAIL = 'Tech Residents Support <support@techresidents.com>'
 
 # SMTP settings
-SMTP_USERNAME = ''
-SMTP_PASSWORD = ''
+SMTP_USERNAME = None
+SMTP_PASSWORD = None
 SMTP_HOST = 'localhost'
 SMTP_PORT = 25
 SMTP_USE_TLS = True
