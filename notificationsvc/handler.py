@@ -8,9 +8,9 @@ from trpycore.factory.base import Factory
 from trpycore.pool.queue import QueuePool
 from trpycore.thread.util import join
 from trpycore.timezone import tz
-from trsvcscore.db.models.notification_models import Notification as NotificationModel
-from trsvcscore.db.models.notification_models import NotificationJob as NotificationJobModel
-from trsvcscore.db.models.django_models import User
+from trsvcscore.db.models import Notification as NotificationModel
+from trsvcscore.db.models import NotificationJob as NotificationJobModel
+from trsvcscore.db.models import User
 from trsvcscore.service.handler.service import ServiceHandler
 from trnotificationsvc.gen import TNotificationService
 from trnotificationsvc.gen.ttypes import NotificationPriority, UnavailableException, InvalidNotificationException
