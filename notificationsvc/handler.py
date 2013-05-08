@@ -167,7 +167,7 @@ class NotificationServiceHandler(TNotificationService.Iface, ServiceHandler):
 
         Args:
             context: String to identify calling context
-            notification: Notification object.
+            notification: Thrift Notification object.
 
                 The notification text fields (subject,
                 plainText, htmlText) support python
